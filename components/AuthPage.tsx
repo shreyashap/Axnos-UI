@@ -1,38 +1,101 @@
 'use client';
 import React, { JSX, useState } from 'react';
-import { Eye, EyeOff, Database, TrendingUp, BarChart3, FileSpreadsheet } from 'lucide-react';
+import { Eye, EyeOff, Database, TrendingUp, BarChart3, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { apiService } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface FormData {
   name: string;
   email: string;
   password: string;
-  confirmPassword: string;
 }
 
 export default function AuthPages(): JSX.Element {
+  const router = useRouter();
   const [isSignIn, setIsSignIn] = useState<boolean>(true);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
   });
+  const { login} = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
   };
 
-  const handleSubmit = (e: React.MouseEvent<HTMLButtonElement>): void => {
+  const validateForm = (): boolean => {
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all required fields');
+      return false;
+    }
+
+    if (!isSignIn) {
+      if (!formData.name) {
+        setError('Please enter your name');
+        return false;
+      }
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Add your authentication logic here
+    
+    if (!validateForm()) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      if (isSignIn) {
+        const response = await apiService.signIn({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        console.log(response);
+        login(response.data.accessToken,response.data.userRes)
+        
+        router.push('/dashboard');
+      } else {
+        const response = await apiService.signUp({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
+
+        console.log(response);
+
+        // // Store token in localStorage
+        // localStorage.setItem('access_token', response.access_token);
+        // localStorage.setItem('user', JSON.stringify(response.user));
+
+        // Redirect to dashboard
+        //router.push('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const switchMode = (): void => {
     setIsSignIn(!isSignIn);
-    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+    setFormData({ name: '', email: '', password: ''});
     setShowPassword(false);
+    setError('');
   };
 
   return (
@@ -101,7 +164,7 @@ export default function AuthPages(): JSX.Element {
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <Database className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">DataInsight AI</h1>
+            <h1 className="text-2xl font-bold text-white">Axnos AI</h1>
           </div>
 
           <div className="space-y-6">
@@ -113,6 +176,13 @@ export default function AuthPages(): JSX.Element {
                 {isSignIn ? 'Sign in to access your dashboard' : 'Start analyzing your data today'}
               </p>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
+                <p className="text-red-400 text-sm text-center">{error}</p>
+              </div>
+            )}
 
             <div className="space-y-4">
               {!isSignIn && (
@@ -126,7 +196,8 @@ export default function AuthPages(): JSX.Element {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all"
+                    disabled={loading}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="John Doe"
                   />
                 </div>
@@ -142,7 +213,8 @@ export default function AuthPages(): JSX.Element {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all"
+                  disabled={loading}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="you@example.com"
                 />
               </div>
@@ -158,41 +230,28 @@ export default function AuthPages(): JSX.Element {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all pr-12"
+                    disabled={loading}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all pr-12 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    disabled={loading}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
-              {!isSignIn && (
-                <div className="space-y-2">
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all"
-                    placeholder="••••••••"
-                  />
-                </div>
-              )}
 
               {isSignIn && (
                 <div className="flex items-center justify-between text-sm">
                   <button 
                     type="button"
-                    className="text-purple-400 hover:text-purple-300 transition-colors"
+                    disabled={loading}
+                    className="text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
                   >
                     Forgot password?
                   </button>
@@ -201,11 +260,20 @@ export default function AuthPages(): JSX.Element {
 
               <button
                 onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
               >
-                {isSignIn ? 'Sign In' : 'Create Account'}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    {isSignIn ? 'Signing In...' : 'Creating Account...'}
+                  </>
+                ) : (
+                  isSignIn ? 'Sign In' : 'Create Account'
+                )}
               </button>
             </div>
+
 
             <div className="text-center">
               <p className="text-gray-300">
@@ -213,7 +281,8 @@ export default function AuthPages(): JSX.Element {
                 <button
                   type="button"
                   onClick={switchMode}
-                  className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                  disabled={loading}
+                  className="text-purple-400 hover:text-purple-300 font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSignIn ? 'Sign Up' : 'Sign In'}
                 </button>
