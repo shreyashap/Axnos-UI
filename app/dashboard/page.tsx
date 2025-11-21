@@ -225,7 +225,7 @@ export default function ModernDashboard() {
         <div className="p-6 border-b border-gray-800">
           <div className="flex items-center space-x-2 mb-1">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg"></div>
-            <h1 className="text-lg font-semibold text-white">DataInsight AI</h1>
+            <h1 className="text-lg font-semibold text-white">Axnos AI</h1>
           </div>
           <p className="text-xs text-gray-400 ml-10">Powered by AI</p>
         </div>
@@ -327,7 +327,7 @@ export default function ModernDashboard() {
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Upload className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Welcome to DataInsight AI</h3>
+                  <h3 className="text-xl font-semibold text-white mb-2">Welcome to Axnos AI</h3>
                   <p className="text-gray-400 mb-6 max-w-md">Upload your dataset and start asking questions to analyze your data with AI-powered insights.</p>
                   <button
                     onClick={handleNewChat}
