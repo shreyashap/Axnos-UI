@@ -1,6 +1,18 @@
 'use client';
+
 import React, { JSX, useState } from 'react';
-import { Eye, EyeOff, Database, TrendingUp, BarChart3, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Eye, 
+  EyeOff, 
+  Bot, 
+  Zap, 
+  Shield, 
+  Cpu, 
+  Loader2, 
+  ArrowRight,
+  Sparkles
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -10,6 +22,23 @@ interface FormData {
   email: string;
   password: string;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: { opacity: 1, x: 0 },
+};
 
 export default function AuthPages(): JSX.Element {
   const router = useRouter();
@@ -22,7 +51,7 @@ export default function AuthPages(): JSX.Element {
     email: '',
     password: '',
   });
-  const { login} = useAuth();
+  const { login } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,7 +63,6 @@ export default function AuthPages(): JSX.Element {
       setError('Please fill in all required fields');
       return false;
     }
-
     if (!isSignIn) {
       if (!formData.name) {
         setError('Please enter your name');
@@ -45,13 +73,11 @@ export default function AuthPages(): JSX.Element {
         return false;
       }
     }
-
     return true;
   };
 
-  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     setLoading(true);
@@ -63,26 +89,16 @@ export default function AuthPages(): JSX.Element {
           email: formData.email,
           password: formData.password,
         });
-
-        console.log(response);
-        login(response.data.accessToken,response.data.userRes)
-        
+        login(response.data.accessToken, response.data.userRes);
         router.push('/dashboard');
       } else {
-        const response = await apiService.signUp({
+        await apiService.signUp({
           name: formData.name,
           email: formData.email,
           password: formData.password,
         });
-
-        console.log(response);
-
-        // // Store token in localStorage
-        // localStorage.setItem('access_token', response.access_token);
-        // localStorage.setItem('user', JSON.stringify(response.user));
-
-        // Redirect to dashboard
-        //router.push('/dashboard');
+        setIsSignIn(true);
+        setError('Account created! Please sign in.');
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please try again.');
@@ -93,204 +109,203 @@ export default function AuthPages(): JSX.Element {
 
   const switchMode = (): void => {
     setIsSignIn(!isSignIn);
-    setFormData({ name: '', email: '', password: ''});
+    setFormData({ name: '', email: '', password: '' });
     setShowPassword(false);
     setError('');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Background Decorations */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="blob top-[-10%] left-[-10%] scale-150 opacity-20" />
+        <div className="blob bottom-[-10%] right-[-10%] scale-150 opacity-20" style={{ animationDelay: '-5s' }} />
+        <div className="absolute inset-0 opacity-[0.03]" 
+          style={{ 
+            backgroundImage: `radial-gradient(circle, #fff 1px, transparent 1px)`, 
+            backgroundSize: '40px 40px' 
+          }} 
+        />
       </div>
 
-      <div className="relative w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
-        {/* Left side - Branding */}
-        <div className="hidden lg:block text-white space-y-8 px-8">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl">
-                <Database className="w-8 h-8" />
+      <motion.div 
+        className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 items-center relative z-10"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        {/* Left Side: Branding & Info */}
+        <div className="hidden lg:block space-y-10 px-8">
+          <motion.div variants={itemVariants} className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-primary/20 border border-primary/30 shadow-glow">
+                <Bot className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Axnos AI
+              <h1 className="text-4xl font-black tracking-tighter">
+                Axnos<span className="text-primary italic">AI</span>
               </h1>
             </div>
-            <p className="text-xl text-gray-300">
-              Transform your data into insights with natural language
+            <p className="text-xl text-zinc-400 font-light leading-relaxed">
+              Step into the next evolution of <br />
+              <span className="text-white font-medium">context-aware intelligence.</span>
+            </p>
+          </motion.div>
+
+          <div className="space-y-6">
+            <AuthFeature 
+              icon={<Zap className="w-5 h-5" />} 
+              title="Instant Latency" 
+              desc="The speed you need for high-velocity logic." 
+            />
+            <AuthFeature 
+              icon={<Shield className="w-5 h-5" />} 
+              title="Secure Context" 
+              desc="Your data is localized and never shared." 
+            />
+            <AuthFeature 
+              icon={<Cpu className="w-5 h-5" />} 
+              title="Neural Scale" 
+              desc="Scaling intelligence across your entire workflow." 
+            />
+          </div>
+        </div>
+
+        {/* Right Side: Auth Form */}
+        <motion.div 
+          variants={itemVariants}
+          className="glass-card rounded-[2rem] p-8 md:p-12 border-primary/10 relative"
+        >
+          {/* Accent Glow */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 blur-3xl -z-10 rounded-full" />
+          
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold mb-3 tracking-tight">
+              {isSignIn ? 'Welcome back' : 'Create account'}
+            </h2>
+            <p className="text-zinc-500">
+              {isSignIn ? 'Enter your credentials to access AxnosAI' : 'Join the elite few defining the future'}
             </p>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-              <div className="bg-purple-500/20 p-2 rounded-lg">
-                <FileSpreadsheet className="w-6 h-6 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Multi-Format Support</h3>
-                <p className="text-gray-400 text-sm">CSV, Excel, JSON, and PDF file analysis</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-              <div className="bg-blue-500/20 p-2 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Natural Language Queries</h3>
-                <p className="text-gray-400 text-sm">Ask questions in plain English, get instant results</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-              <div className="bg-pink-500/20 p-2 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-pink-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Powered by Pandas</h3>
-                <p className="text-gray-400 text-sm">Enterprise-grade data processing capabilities</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right side - Auth Form */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-8 md:p-10">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center justify-center space-x-3 mb-8">
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
-              <Database className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">Axnos AI</h1>
-          </div>
-
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold text-white mb-2">
-                {isSignIn ? 'Welcome Back' : 'Create Account'}
-              </h2>
-              <p className="text-gray-300">
-                {isSignIn ? 'Sign in to access your dashboard' : 'Start analyzing your data today'}
-              </p>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
-                <p className="text-red-400 text-sm text-center">{error}</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <AnimatePresence mode="wait">
               {!isSignIn && (
-                <div className="space-y-2">
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-200">
-                    Full Name
-                  </label>
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2"
+                >
+                  <label className="text-xs font-bold uppercase tracking-widest text-zinc-500 ml-1">Full Name</label>
                   <input
                     type="text"
-                    id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    disabled={loading}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-700"
                     placeholder="John Doe"
                   />
-                </div>
+                </motion.div>
               )}
+            </AnimatePresence>
 
-              <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-200">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-200">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    disabled={loading}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-white placeholder-gray-400 transition-all pr-12 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={loading}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-
-              {isSignIn && (
-                <div className="flex items-center justify-between text-sm">
-                  <button 
-                    type="button"
-                    disabled={loading}
-                    className="text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {isSignIn ? 'Signing In...' : 'Creating Account...'}
-                  </>
-                ) : (
-                  isSignIn ? 'Sign In' : 'Create Account'
-                )}
-              </button>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-zinc-500 ml-1">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all placeholder:text-zinc-700"
+                placeholder="you@axnos.ai"
+              />
             </div>
 
-
-            <div className="text-center">
-              <p className="text-gray-300">
-                {isSignIn ? "Don't have an account? " : 'Already have an account? '}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-zinc-500 ml-1">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all pr-14 placeholder:text-zinc-700"
+                  placeholder="••••••••"
+                />
                 <button
                   type="button"
-                  onClick={switchMode}
-                  disabled={loading}
-                  className="text-purple-400 hover:text-purple-300 font-semibold transition-colors disabled:opacity-50"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors"
                 >
-                  {isSignIn ? 'Sign Up' : 'Sign In'}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
-              </p>
+              </div>
             </div>
+
+            <AnimatePresence>
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-glow hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 group mt-4 overflow-hidden relative"
+            >
+              {loading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <>
+                  <span>{isSignIn ? 'Initialize Session' : 'Create Identity'}</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+              <motion.div 
+                className="absolute inset-0 bg-white/10" 
+                initial={false}
+                whileHover={{ x: '100%', transition: { duration: 0.5 } }}
+                style={{ left: '-100%' }}
+              />
+            </button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <button
+              onClick={switchMode}
+              className="text-zinc-400 hover:text-primary transition-colors text-sm font-medium group"
+            >
+              {isSignIn ? "Don't have an identity?" : "Already recognized?"}{' '}
+              <span className="text-primary font-bold ml-1 group-hover:underline decoration-2 underline-offset-4">
+                {isSignIn ? 'Sign up' : 'Log in'}
+              </span>
+            </button>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
+  );
+}
+
+function AuthFeature({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
+  return (
+    <motion.div 
+      variants={itemVariants}
+      className="flex items-start gap-4 p-5 rounded-2xl glass-card transition-all hover:bg-white/5 border-white/5"
+    >
+      <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
+        {icon}
+      </div>
+      <div>
+        <h3 className="font-bold text-lg mb-1">{title}</h3>
+        <p className="text-zinc-500 text-sm leading-relaxed">{desc}</p>
+      </div>
+    </motion.div>
   );
 }

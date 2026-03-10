@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useChat } from '@/contexts/ChatContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -14,6 +15,7 @@ import {
   ChevronRight,
   Play,
   Download,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -35,7 +37,13 @@ interface RightPanelProps {
 
 const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobileOpen = false, onMobileClose }) => {
   const { activeChat } = useChat();
+  const { accessToken } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionOutput, setExecutionOutput] = useState<string | null>(null);
+  const [executionImages, setExecutionImages] = useState<string[]>([]);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   const lastCodeMessage = activeChat?.messages
     .slice()
@@ -50,25 +58,56 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
     }
   };
 
+  const handleExecuteCode = async () => {
+    if (!lastCodeMessage?.promptId || !accessToken) return;
+
+    setIsExecuting(true);
+    setExecutionOutput(null);
+    setExecutionImages([]);
+
+    try {
+      const response = await fetch(`${API_URL}/code-execution/execute/${lastCodeMessage.promptId}/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExecutionOutput(data.output);
+        setExecutionImages(data.image_urls || []);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setExecutionOutput(`Error: ${errorData.error || 'Execution failed'}`);
+      }
+    } catch (error: any) {
+      setExecutionOutput(`System Error: ${error.message}`);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
   // Chart data will come from the actual data source
   // For now, we'll show empty state if no visualization data is available
   const chartData = activeChat?.dataSource.previewData || [];
 
   if (isCollapsed) {
     return (
-      <div className="hidden md:flex w-12 bg-card border-l border-border flex-col items-center py-4">
-        <Button variant="ghost" size="icon-sm" onClick={onToggle}>
-          <ChevronLeft className="w-4 h-4" />
+      <div className="hidden md:flex w-14 bg-zinc-950/50 backdrop-blur-xl border-l border-white/5 flex-col items-center py-4 gap-4 z-20">
+        <Button variant="ghost" size="icon-sm" onClick={onToggle} className="hover:bg-white/5">
+          <ChevronLeft className="w-4 h-4 text-zinc-400" />
         </Button>
-        <div className="flex-1 flex flex-col items-center gap-4 mt-4">
-          <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Code">
-            <Code className="w-4 h-4" />
+        <div className="flex-1 flex flex-col items-center gap-6 mt-4">
+          <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Code" className="text-zinc-500 hover:text-primary hover:bg-primary/10">
+            <Code className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Visualization">
-            <BarChart3 className="w-4 h-4" />
+          <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Visualization" className="text-zinc-500 hover:text-primary hover:bg-primary/10">
+            <BarChart3 className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Data">
-            <Table className="w-4 h-4" />
+          <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Data" className="text-zinc-500 hover:text-primary hover:bg-primary/10">
+            <Table className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -80,61 +119,67 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-40 md:hidden"
           onClick={onMobileClose}
         />
       )}
 
       <div className={cn(
-        "bg-card border-l border-border flex flex-col animate-slide-in-right transition-all duration-300",
-        "fixed inset-y-0 right-0 z-50 md:relative md:z-0", // Mobile positioning
-        "w-80 md:w-96", // Width
+        "bg-zinc-950/50 backdrop-blur-xl border-l border-white/5 flex flex-col animate-slide-in-right transition-all duration-300 relative z-40",
+        "fixed inset-y-0 right-0 md:relative", // Mobile positioning
+        "w-80 md:w-[450px]", // Width
         !isMobileOpen && "hidden md:flex" // Visibility
       )}>
         {/* Header */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold">Output Panel</h3>
-          <Button variant="ghost" size="icon-sm" onClick={isMobileOpen && onMobileClose ? onMobileClose : onToggle}>
-            <ChevronRight className="w-4 h-4" />
+        <div className="p-4 border-b border-white/5 flex items-center justify-between h-16 bg-black/20">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+            <h3 className="font-bold text-sm uppercase tracking-widest text-zinc-300">Insights Pipeline</h3>
+          </div>
+          <Button variant="ghost" size="icon-sm" onClick={isMobileOpen && onMobileClose ? onMobileClose : onToggle} className="hover:bg-white/5">
+            <ChevronRight className="w-4 h-4 text-zinc-400" />
           </Button>
         </div>
 
         {!activeChat ? (
-          <div className="flex-1 flex items-center justify-center p-8 text-center">
-            <div className="text-muted-foreground">
-              <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Start an analysis to see outputs here</p>
+          <div className="flex-1 flex items-center justify-center p-12 text-center">
+            <div className="text-zinc-600">
+              <BarChart3 className="w-16 h-16 mx-auto mb-6 opacity-20" />
+              <p className="text-sm font-medium">Pipeline Inactive</p>
+              <p className="text-xs opacity-60">Visualizations appear after analysis</p>
             </div>
           </div>
         ) : (
-          <Tabs defaultValue="code" className="flex-1 flex flex-col">
-            <TabsList className="mx-4 mt-4 grid grid-cols-3">
-              <TabsTrigger value="code" className="gap-2">
-                <Code className="w-3 h-3" />
+          <Tabs defaultValue="code" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="mx-4 mt-6 grid grid-cols-3 bg-zinc-900/50 p-1 border border-white/5 rounded-xl">
+              <TabsTrigger value="code" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-glow transition-all">
+                <Code className="w-3.5 h-3.5" />
                 Code
               </TabsTrigger>
-              <TabsTrigger value="viz" className="gap-2">
-                <BarChart3 className="w-3 h-3" />
+              <TabsTrigger value="viz" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-glow transition-all">
+                <BarChart3 className="w-3.5 h-3.5" />
                 Chart
               </TabsTrigger>
-              <TabsTrigger value="data" className="gap-2">
-                <Table className="w-3 h-3" />
+              <TabsTrigger value="data" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-glow transition-all">
+                <Table className="w-3.5 h-3.5" />
                 Data
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="code" className="flex-1 p-4 overflow-hidden">
+            <TabsContent value="code" className="flex-1 p-6 overflow-hidden flex flex-col">
               {lastCodeMessage?.code ? (
                 <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground font-mono">
-                      Python
-                    </span>
-                    <div className="flex gap-1">
-                      <Button
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full bg-blue-500/50" />
+                       <span className="text-xs text-zinc-400 font-mono">Python Kernel</span>
+                    </div>
+                    <div className="flex gap-2">
+                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={handleCopyCode}
+                        className="bg-zinc-900 border border-white/5 hover:bg-white/5"
                       >
                         {copied ? (
                           <Check className="w-3 h-3 text-primary" />
@@ -142,67 +187,110 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
                           <Copy className="w-3 h-3" />
                         )}
                       </Button>
-                      <Button variant="ghost" size="icon-sm" disabled>
-                        <Play className="w-3 h-3" />
+                      <Button 
+                        variant="ghost" 
+                        size="icon-sm" 
+                        onClick={handleExecuteCode}
+                        disabled={isExecuting}
+                        className={cn(
+                          "bg-zinc-900 border border-white/5 hover:bg-primary/20 hover:text-primary transition-colors",
+                          isExecuting && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        {isExecuting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                       </Button>
                     </div>
                   </div>
-                  <div className="flex-1 bg-background rounded-lg p-4 overflow-auto scrollbar-thin">
-                    <pre className="text-sm font-mono text-foreground">
+                  <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl p-6 overflow-auto scrollbar-thin shadow-inner mb-4">
+                    <pre className="text-sm font-mono text-zinc-300 leading-relaxed">
                       <code>{lastCodeMessage.code}</code>
                     </pre>
                   </div>
+
+                  {/* Execution Results */}
+                  {(executionOutput || executionImages.length > 0) && (
+                    <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {executionOutput && (
+                        <div className="bg-zinc-900/80 rounded-xl border border-white/10 p-4">
+                          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">Execution Logs</p>
+                          <pre className="text-xs font-mono text-zinc-400 whitespace-pre-wrap break-all leading-relaxed max-h-40 overflow-auto scrollbar-thin">
+                            {executionOutput}
+                          </pre>
+                        </div>
+                      )}
+                      
+                      {executionImages.map((url, idx) => (
+                        <div key={idx} className="bg-white/5 rounded-xl border border-white/10 p-2 overflow-hidden shadow-glow shadow-primary/5">
+                          <img src={url} alt={`Visualization ${idx + 1}`} className="w-full h-auto rounded-lg" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-center">
-                  <div className="text-muted-foreground">
-                    <Code className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No code generated yet</p>
-                    <p className="text-xs">Ask a question to generate code</p>
+                <div className="h-full flex items-center justify-center text-center py-20">
+                  <div className="text-zinc-600">
+                    <Code className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-sm">Logic Empty</p>
+                    <p className="text-xs opacity-60">Generate code via chat command</p>
                   </div>
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="viz" className="flex-1 p-4 overflow-hidden">
+            <TabsContent value="viz" className="flex-1 p-6 overflow-hidden flex flex-col">
               {chartData.length > 0 ? (
                 <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium">Data Visualization</span>
-                    <Button variant="ghost" size="icon-sm" disabled>
-                      <Download className="w-3 h-3" />
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Real-time Visualization</h4>
+                    <Button variant="ghost" size="icon-sm" className="hover:bg-white/5">
+                      <Download className="w-4 h-4 text-zinc-500" />
                     </Button>
                   </div>
-                  <div className="flex-1 min-h-[200px]">
+                  <div className="flex-1 min-h-[300px] bg-black/20 rounded-2xl p-4 border border-white/5">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData.slice(0, 10)}>
+                        <defs>
+                          <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid
                           strokeDasharray="3 3"
-                          stroke="hsl(var(--border))"
+                          stroke="rgba(255,255,255,0.05)"
+                          vertical={false}
                         />
                         <XAxis
                           dataKey={activeChat.dataSource.columns?.[0]?.name || 'name'}
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                          tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
                         />
                         <YAxis
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                          tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: 'hsl(var(--popover))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                            color: 'hsl(var(--foreground))',
+                            backgroundColor: 'rgba(9,9,11,0.9)',
+                            backdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '12px',
+                            color: '#fff',
+                            fontSize: '12px',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
                           }}
+                          cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                         />
-                        {activeChat.dataSource.columns?.slice(0, 3).map((col, idx) => (
+                        {activeChat.dataSource.columns?.slice(0, 1).map((col, idx) => (
                           <Bar
                             key={col.name}
                             dataKey={col.name}
-                            fill={`hsl(var(--primary))`}
-                            radius={[4, 4, 0, 0]}
+                            fill="url(#colorPrimary)"
+                            radius={[6, 6, 0, 0]}
+                            barSize={32}
                           />
                         ))}
                       </BarChart>
@@ -210,49 +298,50 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-center">
-                  <div className="text-muted-foreground">
-                    <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No visualization yet</p>
-                    <p className="text-xs">Ask for a chart or graph</p>
+                <div className="h-full flex items-center justify-center text-center py-20">
+                  <div className="text-zinc-600">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-sm">Neural Link Empty</p>
+                    <p className="text-xs opacity-60">Connect data to visualize patterns</p>
                   </div>
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="data" className="flex-1 p-4 overflow-hidden">
+            <TabsContent value="data" className="flex-1 p-0 overflow-hidden flex flex-col">
               {activeChat.dataSource.previewData ? (
                 <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">
-                      Preview (Top 5 rows)
-                    </span>
-                    <Button variant="ghost" size="icon-sm" disabled>
-                      <Download className="w-3 h-3" />
+                  <div className="p-6 pb-2 flex items-center justify-between shrink-0">
+                    <div>
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Direct Memory Access</h4>
+                        <p className="text-[10px] text-zinc-500 font-medium">TOP 5 RECORDS FROM SOURCE</p>
+                    </div>
+                    <Button variant="ghost" size="icon-sm" className="hover:bg-white/5">
+                      <Download className="w-4 h-4 text-zinc-500" />
                     </Button>
                   </div>
-                  <div className="flex-1 overflow-auto scrollbar-thin rounded-lg border border-border">
-                    <table className="w-full text-xs">
-                      <thead className="bg-secondary sticky top-0">
+                  <div className="flex-1 overflow-auto scrollbar-thin mx-4 mb-4 mt-2 rounded-2xl border border-white/5 bg-black/40">
+                    <table className="w-full text-[11px] border-collapse">
+                      <thead className="bg-zinc-900/80 backdrop-blur-md sticky top-0 text-zinc-500 z-10">
                         <tr>
                           {activeChat.dataSource.columns?.map((col) => (
                             <th
                               key={col.name}
-                              className="px-3 py-2 text-left font-medium text-muted-foreground"
+                              className="px-4 py-3 text-left font-bold uppercase tracking-tighter border-b border-white/5"
                             >
                               {col.name}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-white/[0.03]">
                         {activeChat.dataSource.previewData.map((row: any, i) => (
                           <tr
                             key={i}
-                            className="border-t border-border hover:bg-secondary/50 transition-colors"
+                            className="hover:bg-primary/5 transition-colors text-zinc-400 group"
                           >
                             {activeChat.dataSource.columns?.map((col) => (
-                              <td key={col.name} className="px-3 py-2 font-mono">
+                              <td key={col.name} className="px-4 py-3 font-mono group-hover:text-zinc-200">
                                 {String(row[col.name])}
                               </td>
                             ))}
@@ -263,11 +352,11 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-center">
-                  <div className="text-muted-foreground">
-                    <Table className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No data loaded</p>
-                    <p className="text-xs">Upload a file to preview data</p>
+                <div className="h-full flex items-center justify-center text-center py-20">
+                  <div className="text-zinc-600">
+                    <Table className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-sm">Buffer Empty</p>
+                    <p className="text-xs opacity-60">Initialize a data stream to preview</p>
                   </div>
                 </div>
               )}

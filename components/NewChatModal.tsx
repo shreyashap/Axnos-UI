@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -189,8 +190,9 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ isOpen, onClose }) => {
 
         // Fetch table details for the selected table
         let columns: Array<{ name: string; type: string }> = [];
+        let tableData: any[] = [];
         try {
-          const dataResponse = await fetch(`${API_URL}/db-connect/fetch-table-recoreds/${chatId}/`, {
+          const dataResponse = await fetch(`${API_URL}/db-connect/fetch-table-records/${chatId}/`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -201,7 +203,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ isOpen, onClose }) => {
 
           if (dataResponse.ok) {
             const data = await dataResponse.json();
-            const tableData = data.data[selectedTable] || [];
+            tableData = data.data[selectedTable] || [];
 
             if (tableData.length > 0) {
               columns = Object.keys(tableData[0]).map(key => ({
@@ -214,15 +216,15 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ isOpen, onClose }) => {
           console.error('Failed to fetch table details:', error);
         }
 
-        // Update chat name to the selected table
-        const updateNameResponse = await fetch(`${API_URL}/chats/chat-update-name/${chatId}/`, {
+        // Update chat technical table name
+        const updateTableResponse = await fetch(`${API_URL}/chats/chat-update-table/${chatId}/`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            name: selectedTable,
+            table_name: selectedTable,
           }),
         });
 
@@ -235,6 +237,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ isOpen, onClose }) => {
             dbUrl,
             tableName: selectedTable,
             columns: columns,
+            previewData: tableData,
           },
         });
       }
@@ -249,223 +252,276 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="sm:max-w-lg bg-zinc-950/80 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden p-0 rounded-3xl">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-20%] left-[-20%] w-64 h-64 bg-primary/20 blur-[80px] rounded-full opacity-40 animate-pulse" />
+        </div>
+
+        <DialogHeader className="p-6 pb-2 relative z-10">
+          <DialogTitle className="flex items-center gap-3 text-xl font-bold tracking-tight">
             {step !== 'choose' && (
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setStep(step === 'tables' ? 'database' : 'choose')}
+                className="hover:bg-white/5 rounded-full h-8 w-8"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 text-zinc-400" />
               </Button>
             )}
-            {step === 'choose' && 'New Analysis'}
-            {step === 'upload' && 'Upload Dataset'}
-            {step === 'database' && 'Connect Database'}
-            {step === 'tables' && 'Select Table'}
+            <span className="gradient-text">
+              {step === 'choose' && 'Initialize Analysis'}
+              {step === 'upload' && 'Synthesize Dataset'}
+              {step === 'database' && 'Neural DB Link'}
+              {step === 'tables' && 'Select Data Stream'}
+            </span>
           </DialogTitle>
         </DialogHeader>
 
-        {step === 'choose' && (
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <button
-              onClick={() => setStep('upload')}
-              className="group flex flex-col items-center gap-4 p-6 rounded-xl border border-border bg-secondary/30 hover:bg-secondary hover:border-primary/50 transition-all duration-200"
-            >
-              <div className="w-14 h-14 rounded-xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                <FileSpreadsheet className="w-7 h-7 text-primary" />
-              </div>
-              <div className="text-center">
-                <p className="font-medium mb-1">Upload File</p>
-                <p className="text-xs text-muted-foreground">CSV or Excel files</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setStep('database')}
-              className="group flex flex-col items-center gap-4 p-6 rounded-xl border border-border bg-secondary/30 hover:bg-secondary hover:border-primary/50 transition-all duration-200"
-            >
-              <div className="w-14 h-14 rounded-xl bg-accent/10 group-hover:bg-accent/20 flex items-center justify-center transition-colors">
-                <Database className="w-7 h-7 text-accent" />
-              </div>
-              <div className="text-center">
-                <p className="font-medium mb-1">Connect Database</p>
-                <p className="text-xs text-muted-foreground">PostgreSQL, MySQL, etc.</p>
-              </div>
-            </button>
-          </div>
-        )}
-
-        {step === 'upload' && (
-          <div className="py-4 space-y-4">
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleFileDrop}
-              className={cn(
-                'border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200',
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50',
-                file && 'border-primary bg-primary/5'
-              )}
-            >
-              {file ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <FileSpreadsheet className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setFile(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                  <p className="font-medium mb-1">Drop your file here</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    or click to browse
-                  </p>
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <Button variant="outline" size="sm" type="button">
-                      Browse Files
-                    </Button>
-                  </label>
-                </>
-              )}
-            </div>
-
-            <Button
-              className="w-full"
-              disabled={!file || isUploading}
-              onClick={handleStartAnalysis}
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  Start Analysis
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-
-        {step === 'database' && (
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="db-url">Database URL</Label>
-              <Input
-                id="db-url"
-                placeholder="postgresql://user:pass@host:5432/dbname"
-                value={dbUrl}
-                onChange={(e) => setDbUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter your database connection string
-              </p>
-            </div>
-
-            <Button
-              className="w-full"
-              disabled={!dbUrl.trim() || isConnecting}
-              onClick={handleConnectDB}
-            >
-              {isConnecting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                <>
-                  Connect
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-
-        {step === 'tables' && (
-          <div className="py-4 space-y-4">
-            <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
-              {tables.map((table) => (
+        <div className="p-6 pt-2 relative z-10">
+          {step === 'choose' && (
+             <motion.div 
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="grid grid-cols-2 gap-4 py-4"
+             >
                 <button
-                  key={table.name}
-                  onClick={() => setSelectedTable(table.name)}
-                  className={cn(
-                    'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200',
-                    selectedTable === table.name
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-secondary/50'
-                  )}
+                  onClick={() => setStep('upload')}
+                  className="group flex flex-col items-center gap-5 p-8 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-primary/5 hover:border-primary/40 transition-all duration-300 shadow-inner"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
-                    <Table className="w-4 h-4 text-muted-foreground" />
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-all duration-300 shadow-glow shadow-primary/5 group-hover:scale-110">
+                    <FileSpreadsheet className="w-8 h-8 text-primary" />
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-medium">{table.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {table.rowCount.toLocaleString()} rows •{' '}
-                      {table.columns.length} columns
-                    </p>
+                  <div className="text-center">
+                    <p className="font-bold text-zinc-200 mb-1">Local Files</p>
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">CSV • EXCEL • JSON</p>
                   </div>
-                  {selectedTable === table.name && (
-                    <Check className="w-4 h-4 text-primary" />
-                  )}
                 </button>
-              ))}
-            </div>
 
-            <Button
-              className="w-full"
-              disabled={!selectedTable || isUploading}
-              onClick={handleStartAnalysis}
+                <button
+                  onClick={() => setStep('database')}
+                  className="group flex flex-col items-center gap-5 p-8 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-emerald-500/5 hover:border-emerald-500/40 transition-all duration-300 shadow-inner"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 group-hover:bg-emerald-500/20 flex items-center justify-center transition-all duration-300 shadow-glow shadow-emerald-500/5 group-hover:scale-110">
+                    <Database className="w-8 h-8 text-emerald-500" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-zinc-200 mb-1">Live Database</p>
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">SQL • NO-SQL • REST</p>
+                  </div>
+                </button>
+             </motion.div>
+          )}
+
+          {step === 'upload' && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="py-4 space-y-6"
             >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  Start Analysis
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileDrop}
+                className={cn(
+                  'border border-dashed rounded-2xl p-10 text-center transition-all duration-300 bg-white/[0.02]',
+                  isDragging
+                    ? 'border-primary bg-primary/5 shadow-glow shadow-primary/5'
+                    : 'border-white/10 hover:border-primary/30',
+                  file && 'border-primary bg-primary/5'
+                )}
+              >
+                {file ? (
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center shadow-lg shadow-primary/10">
+                      <FileSpreadsheet className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-left flex-1 min-w-0">
+                      <p className="font-bold text-zinc-100 truncate">{file.name}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                        {(file.size / 1024).toFixed(1)} KB • READY FOR INGESTION
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setFile(null)}
+                      className="hover:bg-destructive/10 hover:text-destructive text-zinc-500 rounded-full"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-12 h-12 mx-auto mb-4 text-zinc-600 opacity-50" />
+                    <p className="font-bold text-zinc-300 mb-1">Transmit Data Packages</p>
+                    <p className="text-xs text-zinc-500 mb-6 font-medium">
+                      Drag and drop to initiate synchronization
+                    </p>
+                    <input
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Button variant="outline" size="sm" type="button" className="rounded-full bg-zinc-900 border-white/10 hover:bg-white/5 font-semibold px-6">
+                        Browse Filesystem
+                      </Button>
+                    </label>
+                  </>
+                )}
+              </div>
+
+              <Button
+                className={cn(
+                  "w-full h-12 rounded-2xl font-bold transition-all duration-300",
+                  file ? "bg-primary text-white shadow-glow" : "bg-zinc-800 text-zinc-500"
+                )}
+                disabled={!file || isUploading}
+                onClick={handleStartAnalysis}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Ingesting Stream...
+                  </>
+                ) : (
+                  <>
+                    Begin Transformation
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          )}
+
+          {step === 'database' && (
+            <motion.div 
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               className="py-4 space-y-6"
+            >
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="db-url" className="text-[10px] uppercase tracking-[0.2em] font-black text-zinc-500 ml-1">Access Protocol (URI)</Label>
+                  <div className="relative">
+                    <Input
+                      id="db-url"
+                      placeholder="postgresql://access_token@cluster.axnos.com:5432/main"
+                      value={dbUrl}
+                      onChange={(e) => setDbUrl(e.target.value)}
+                      className="bg-black/50 border-white/10 h-12 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 shadow-inner px-4 text-zinc-200 placeholder:text-zinc-700 font-mono text-sm"
+                    />
+                    <Database className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700" />
+                  </div>
+                  <p className="text-[9px] text-zinc-600 font-medium ml-1">
+                    * ALL CONNECTIONS ARE ENCRYPTED VIA END-TO-END QUANTUM PROTECTION
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                className={cn(
+                  "w-full h-12 rounded-2xl font-bold transition-all duration-300",
+                  dbUrl.trim() ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-zinc-800 text-zinc-500"
+                )}
+                disabled={!dbUrl.trim() || isConnecting}
+                onClick={handleConnectDB}
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Synchronizing...
+                  </>
+                ) : (
+                  <>
+                    Establish Connection
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          )}
+
+          {step === 'tables' && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="py-4 space-y-6"
+            >
+              <div className="space-y-3 max-h-72 overflow-y-auto scrollbar-thin pr-2 custom-scroll">
+                {tables.map((table) => (
+                  <button
+                    key={table.name}
+                    onClick={() => setSelectedTable(table.name)}
+                    className={cn(
+                      'w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden group',
+                      selectedTable === table.name
+                        ? 'border-emerald-500/50 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                        : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10'
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300",
+                      selectedTable === table.name ? "bg-emerald-500/20" : "bg-black/40 group-hover:bg-zinc-900"
+                    )}>
+                      <Table className={cn(
+                        "w-5 h-5",
+                        selectedTable === table.name ? "text-emerald-500" : "text-zinc-600 group-hover:text-zinc-400"
+                      )} />
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className={cn(
+                        "font-bold truncate",
+                        selectedTable === table.name ? "text-emerald-400" : "text-zinc-300"
+                      )}>{table.name}</p>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                        {table.rowCount.toLocaleString()} ENTRIES • {table.columns.length} ATTRIBUTES
+                      </p>
+                    </div>
+                    {selectedTable === table.name && (
+                      <motion.div 
+                        layoutId="active-check"
+                        className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </motion.div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                className={cn(
+                  "w-full h-12 rounded-2xl font-bold transition-all duration-300",
+                  selectedTable ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "bg-zinc-800 text-zinc-500"
+                )}
+                disabled={!selectedTable || isUploading}
+                onClick={handleStartAnalysis}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Deploying Pipeline...
+                  </>
+                ) : (
+                  <>
+                    Initialize Stream
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
 export default NewChatModal;
-

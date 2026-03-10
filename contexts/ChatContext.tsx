@@ -50,19 +50,59 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           data.map(async (chat: any) => {
             let previewData: any[] = [];
             let columns: Array<{ name: string; type: string }> = [];
-
-            // Load preview data for file-based chats
-            if (chat.source_type === 'file' && chat.dataset) {
+            
+            // Load preview data if available in backend
+            if (chat.preview) {
               try {
-                // For now we skip fetching full file content for list view to save bandwidth
-                // We can implement lazy loading if needed, or rely on stored preview if backend provides it
-                // If backend provides preview in list, use it:
-                if (chat.preview) {
-                  // Handle backend preview if available
+                let rawRecords: any[] = [];
+                if (Array.isArray(chat.preview)) {
+                  rawRecords = chat.preview;
+                } else if (typeof chat.preview === 'object') {
+                  const tableName = chat.table_name || chat.name || '';
+                  const records = chat.preview[tableName];
+                  if (Array.isArray(records)) {
+                    rawRecords = records;
+                  } else {
+                    // Fallback to first available array in object
+                    const firstKey = Object.keys(chat.preview).find(k => Array.isArray(chat.preview[k]));
+                    if (firstKey) rawRecords = chat.preview[firstKey];
+                  }
+                }
+
+                if (rawRecords.length > 0) {
+                  previewData = rawRecords;
+                  columns = Object.keys(rawRecords[0]).map(key => ({
+                    name: key,
+                    type: typeof rawRecords[0][key] === 'number' ? 'numeric' : 'string'
+                  }));
                 }
               } catch (error) {
-                console.error('Failed to load preview data:', error);
+                console.error('Failed to parse cached preview:', error);
               }
+            }
+
+            // Map historical messages (prompts) if available
+            const messages: ChatMessage[] = [];
+            if (chat.prompts && Array.isArray(chat.prompts)) {
+              chat.prompts.forEach((p: any) => {
+                // Add user message
+                messages.push({
+                  id: `prompt-u-${p.id}`,
+                  role: 'user',
+                  content: p.prompt,
+                  timestamp: p.created_at
+                });
+                
+                // Add assistant response
+                messages.push({
+                  id: `prompt-a-${p.id}`,
+                  role: 'assistant',
+                  content: p.result_txt || `I've generated the code based on your request.`,
+                  code: p.generated_code,
+                  promptId: p.id.toString(), // Store the ID for execution
+                  timestamp: p.created_at
+                });
+              });
             }
 
             return {
@@ -71,15 +111,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               updatedAt: new Date(chat.created_At || Date.now()),
               dataSource: {
                 type: chat.source_type === 'database_url' ? 'database' : 'file',
-                name: chat.dataset || 'Unknown',
+                name: chat.name || chat.dataset || 'Unknown',
                 fileName: chat.dataset?.split('/').pop(),
                 fileType: chat.dataset?.endsWith('.csv') ? 'csv' : 'excel',
                 dbUrl: chat.source_type === 'database_url' ? chat.dataset : undefined,
-                tableName: chat.source_type === 'database_url' ? chat.dataset : undefined,
+                tableName: chat.source_type === 'database_url' ? (chat.table_name || chat.name) : undefined,
                 previewData,
                 columns,
               },
-              messages: [],
+              messages: messages,
             };
           })
         );
@@ -227,6 +267,47 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     activeChat,
     setActiveChat: (chat: Chat | null) => {
       setActiveChat(chat);
+      
+      // Background refresh for database previews
+      if (chat && chat.dataSource.type === 'database' && chat.dataSource.tableName && accessToken) {
+        const tableName = chat.dataSource.tableName;
+        const chatId = chat.id;
+        const refreshPreview = async () => {
+          try {
+            const dataResponse = await fetch(`${API_URL}/db-connect/fetch-table-records/${chatId}/`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ tables: [tableName] }),
+            });
+
+            if (dataResponse.ok) {
+              const data = await dataResponse.json();
+              const tableData = data.data[tableName] || [];
+              
+              if (tableData.length > 0) {
+                const columns = Object.keys(tableData[0]).map(key => ({
+                  name: key,
+                  type: typeof tableData[0][key] === 'number' ? 'numeric' : 'string',
+                }));
+
+                updateChat(chat.id, {
+                  dataSource: {
+                    ...chat.dataSource,
+                    previewData: tableData,
+                    columns: columns,
+                  }
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Failed to auto-refresh preview data:', error);
+          }
+        };
+        refreshPreview();
+      }
     },
     createChat,
     updateChat,

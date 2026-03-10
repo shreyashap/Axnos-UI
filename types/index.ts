@@ -10,6 +10,7 @@ export interface ChatMessage {
   content: string;
   code?: string;
   timestamp?: string;
+  promptId?: string;
 }
 
 export interface DataSource {

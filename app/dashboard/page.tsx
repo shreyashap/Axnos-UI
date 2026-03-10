@@ -33,29 +33,37 @@ export default function DashboardPage() {
 
   return (
     <ChatProvider>
-      <div className="flex h-screen bg-background overflow-hidden relative">
-        <Sidebar
-          isCollapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          onNewChat={() => setShowNewChatModal(true)}
-          isMobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-        />
-
-        <div className="flex-1 flex flex-col min-w-0 w-full relative">
-          <ChatArea
-            onNewChat={() => setShowNewChatModal(true)}
-            onMobileMenuToggle={() => setMobileSidebarOpen(true)}
-            onMobileDetailsToggle={() => setMobileRightPanelOpen(true)}
-          />
+      <div className="flex h-screen bg-black text-white overflow-hidden relative selection:bg-primary selection:text-white">
+        {/* Background Blobs */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
+          <div className="blob top-[-10%] left-[-10%] scale-150 opacity-20" />
+          <div className="blob bottom-[-10%] right-[-10%] scale-150 opacity-20" style={{ animationDelay: '-5s' }} />
         </div>
 
-        <RightPanel
-          isCollapsed={rightPanelCollapsed}
-          onToggle={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-          isMobileOpen={mobileRightPanelOpen}
-          onMobileClose={() => setMobileRightPanelOpen(false)}
-        />
+        <div className="relative z-10 flex w-full h-full overflow-hidden">
+          <Sidebar
+            isCollapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onNewChat={() => setShowNewChatModal(true)}
+            isMobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+          />
+
+          <div className="flex-1 flex flex-col min-w-0 w-full relative">
+            <ChatArea
+              onNewChat={() => setShowNewChatModal(true)}
+              onMobileMenuToggle={() => setMobileSidebarOpen(true)}
+              onMobileDetailsToggle={() => setMobileRightPanelOpen(true)}
+            />
+          </div>
+
+          <RightPanel
+            isCollapsed={rightPanelCollapsed}
+            onToggle={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+            isMobileOpen={mobileRightPanelOpen}
+            onMobileClose={() => setMobileRightPanelOpen(false)}
+          />
+        </div>
 
         <NewChatModal
           isOpen={showNewChatModal}

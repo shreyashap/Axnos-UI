@@ -14,6 +14,8 @@ import {
   Database,
   ChevronLeft,
   ChevronRight,
+  Bot,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,61 +60,59 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
 
       <div
         className={cn(
-          'h-full bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300',
+          'h-full bg-zinc-950/50 backdrop-blur-xl flex flex-col border-r border-white/5 transition-all duration-300',
           'fixed inset-y-0 left-0 z-50 md:relative md:z-0', // Mobile positioning
-          isCollapsed ? 'w-16' : 'w-72',
-          !isMobileOpen && 'hidden md:flex' // Hide on mobile if not open, always show on desktop (flex because original was flex)
+          isCollapsed ? 'w-20' : 'w-72',
+          !isMobileOpen && 'hidden md:flex' // Hide on mobile if not open
         )}
       >
         {/* Header */}
-        <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
+        <div className="p-4 flex items-center justify-between border-b border-white/5 h-16">
           {!isCollapsed && (
             <div className="flex items-center gap-2 animate-fade-in">
-              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Database className="w-4 h-4 text-primary" />
-              </div>
-              <span className="font-semibold gradient-text">DataFlow</span>
+               <Bot className="text-primary w-6 h-6" />
+               <span className="text-xl font-bold tracking-tight">Axnos<span className="text-primary">AI</span></span>
             </div>
           )}
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={onToggle}
-            className="shrink-0"
+            className={cn("shrink-0 hover:bg-white/5", isCollapsed && "mx-auto")}
           >
             {isCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
             ) : (
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-zinc-400" />
             )}
           </Button>
         </div>
 
         {/* New Chat Button */}
-        <div className="p-3">
+        <div className="p-4">
           <Button
             onClick={onNewChat}
             className={cn(
-              'w-full justify-start gap-2',
-              isCollapsed && 'justify-center px-0'
+              'w-full justify-start gap-2 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 shadow-glow transition-all duration-300',
+              isCollapsed && 'justify-center px-0 h-12 w-12 mx-auto rounded-xl'
             )}
             variant="outline"
           >
-            <Plus className="w-4 h-4" />
-            {!isCollapsed && <span>New Analysis</span>}
+            <Plus className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="font-semibold">New Analysis</span>}
           </Button>
         </div>
 
         {/* Chat List */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-1">
+        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2 space-y-1">
           {chats.map((chat) => (
             <div
               key={chat.id}
               className={cn(
-                'group relative rounded-lg transition-all duration-200',
+                'group relative rounded-xl transition-all duration-200',
                 activeChat?.id === chat.id
-                  ? 'bg-sidebar-accent'
-                  : 'hover:bg-sidebar-accent/50'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
               )}
             >
               <button
@@ -122,11 +122,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
                   isCollapsed && 'justify-center'
                 )}
               >
-                <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
+                <MessageSquare className={cn(
+                  "w-4 h-4 shrink-0",
+                  activeChat?.id === chat.id ? "text-primary" : "text-zinc-500"
+                )} />
                 {!isCollapsed && (
                   <div className="flex-1 min-w-0 animate-fade-in">
                     <p className="text-sm font-medium truncate">{chat.title}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs opacity-50">
                       {formatDate(chat.updatedAt)}
                     </p>
                   </div>
@@ -136,42 +139,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteChat(chat.id);
                   }}
                 >
-                  <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                  <Trash2 className="w-3 h-3 text-zinc-500 hover:text-destructive" />
                 </Button>
               )}
             </div>
           ))}
 
           {chats.length === 0 && !isCollapsed && (
-            <div className="text-center py-8 text-muted-foreground text-sm animate-fade-in">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No analyses yet</p>
-              <p className="text-xs">Start a new analysis above</p>
+            <div className="text-center py-12 text-zinc-600 animate-fade-in">
+              <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-20" />
+              <p className="text-sm font-medium">Ready for insight?</p>
+              <p className="text-xs opacity-60">Upload a dataset to start</p>
             </div>
           )}
         </div>
 
         {/* User Section */}
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-4 border-t border-white/5 bg-black/20">
           <div
             className={cn(
               'flex items-center gap-3',
               isCollapsed ? 'flex-col' : ''
             )}
           >
-            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-lg shadow-primary/5">
+              <User className="w-5 h-5 text-primary" />
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0 animate-fade-in">
-                <p className="text-sm font-medium truncate">{user?.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-sm font-bold truncate text-zinc-200">{user?.name || 'User'}</p>
+                <p className="text-[10px] text-zinc-500 truncate uppercase tracking-tighter">
                   {user?.email}
                 </p>
               </div>
@@ -180,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
               variant="ghost"
               size="icon-sm"
               onClick={handleLogout}
-              className="shrink-0"
+              className="shrink-0 hover:bg-destructive/10 hover:text-destructive text-zinc-500"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -193,6 +196,4 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
 };
 
 export default Sidebar;
-
-
 
