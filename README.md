@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AxnosAI Frontend 🎨
 
-## Getting Started
+The sleek, intelligent user interface for the **AxnosAI** ecosystem. Built with Next.js 14, this dashboard provides a premium experience for data exploration and analysis.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Features
+
+- **Interactive AI Chat**: High-performance chat interface with real-time streaming responses.
+- **Dynamic Model Selection**: Switch between different LLMs (Mistral, DeepSeek, Llama, GPT) on the fly.
+- **Data Visualization**: Integrated code blocks for generated Python/Pandas scripts.
+- **File & Database Integration**: Connect to various data sources seamlessly.
+- **Voice-to-Text**: Built-in voice recognition for hands-free querying.
+- **Premium Design**: Dark-mode first, glassmorphic UI with smooth Framer Motion animations.
+
+---
+
+## 🛠 Tech Stack
+
+- **Framework**: [Next.js 14 (App Router)](https://nextjs.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **State Management**: React Context API
+- **Authentication**: JWT-based auth flow
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Node.js 18+ 
+- NPM / Yarn / Bun
+
+### 2. Configuration
+Create a `.env.local` file in the root directory:
+```env
+NEXT_PUBLIC_AUTH_API_URL=http://localhost:3001
+NEXT_PUBLIC_PROXY_API_URL=http://localhost:8001
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Installation
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🐳 Docker Deployment
 
-To learn more about Next.js, take a look at the following resources:
+You can run the frontend as a standalone container or as part of the AxnosAI stack.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Pull from Docker Hub
+```bash
+docker pull aakashmohole/axnos-frontend:latest
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Run Locally
+```bash
+docker run -p 3000:3000 aakashmohole/axnos-frontend:latest
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📁 Folder Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/`: Next.js App Router pages and layouts.
+- `components/`: Reusable UI components (ChatArea, SideBar, etc.).
+- `context/`: Authentication and Global state providers.
+- `lib/`: API service utilities and helper functions.
+- `types/`: TypeScript interface definitions.
+- `public/`: Static assets and icons.
+
+---
+
+## 📝 License
+MIT License. Part of the AxnosAI project.
