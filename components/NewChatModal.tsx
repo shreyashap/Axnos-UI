@@ -46,7 +46,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ isOpen, onClose }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingChatId, setPendingChatId] = useState<string | null>(null);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const API_URL = process.env.NEXT_PUBLIC_PROXY_API_URL || 'http://localhost:8001';
 
   const handleClose = () => {
     // If we have a pending chat but didn't finish setup (no table selected), 

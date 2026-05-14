@@ -25,12 +25,19 @@ export interface DataSource {
   previewData?: any[];
 }
 
+export interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface Chat {
   id: string;
   title: string;
   updatedAt: Date;
   dataSource: DataSource;
   messages: ChatMessage[];
+  modelId?: string;
 }
 
 

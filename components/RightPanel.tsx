@@ -105,7 +105,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
 
   const parsedLogTable = parseLogToTable(executionOutput);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const API_URL = process.env.NEXT_PUBLIC_PROXY_API_URL || 'http://localhost:8001';
 
   const lastCodeMessage = activeChat?.messages
     .slice()
@@ -154,7 +154,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
   };
 
   const handleEditClick = () => {
-    if (lastCodeMessage) {
+    if (lastCodeMessage?.code) {
       setEditedCode(lastCodeMessage.code);
       setIsEditing(true);
     }
@@ -199,9 +199,9 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
 
   if (isCollapsed) {
     return (
-      <div className="hidden md:flex w-14 bg-zinc-950/50 backdrop-blur-xl border-l border-white/5 flex-col items-center py-4 gap-4 z-20">
-        <Button variant="ghost" size="icon-sm" onClick={onToggle} className="hover:bg-white/5">
-          <ChevronLeft className="w-4 h-4 text-zinc-400" />
+      <div className="hidden md:flex w-14 bg-sidebar/50 backdrop-blur-xl border-l border-sidebar-border flex-col items-center py-4 gap-4 z-20">
+        <Button variant="ghost" size="icon-sm" onClick={onToggle} className="hover:bg-sidebar-accent">
+          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </Button>
         <div className="flex-1 flex flex-col items-center gap-6 mt-4">
           <Button variant="ghost" size="icon-sm" onClick={onToggle} title="Code" className="text-zinc-500 hover:text-primary hover:bg-primary/10">
@@ -229,19 +229,19 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
       )}
 
       <div className={cn(
-        "bg-zinc-950/50 backdrop-blur-xl border-l border-white/5 flex flex-col animate-slide-in-right transition-all duration-300 relative z-40",
+        "bg-sidebar/50 backdrop-blur-xl border-l border-sidebar-border flex flex-col animate-slide-in-right transition-all duration-300 relative z-40",
         "fixed inset-y-0 right-0 md:relative", // Mobile positioning
         "w-80 md:w-[450px]", // Width
         !isMobileOpen && "hidden md:flex" // Visibility
       )}>
         {/* Header */}
-        <div className="p-4 border-b border-white/5 flex items-center justify-between h-16 bg-black/20">
+        <div className="p-4 border-b border-sidebar-border flex items-center justify-between h-16 bg-background/20">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
-            <h3 className="font-bold text-sm uppercase tracking-widest text-zinc-300">Insights Pipeline</h3>
+            <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground">Insights Pipeline</h3>
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={isMobileOpen && onMobileClose ? onMobileClose : onToggle} className="hover:bg-white/5">
-            <ChevronRight className="w-4 h-4 text-zinc-400" />
+          <Button variant="ghost" size="icon-sm" onClick={isMobileOpen && onMobileClose ? onMobileClose : onToggle} className="hover:bg-accent">
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </Button>
         </div>
 
@@ -255,16 +255,16 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
           </div>
         ) : (
           <Tabs defaultValue="code" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="mx-4 mt-6 grid grid-cols-3 bg-zinc-900/50 p-1 border border-white/5 rounded-xl">
-              <TabsTrigger value="code" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-glow transition-all">
+            <TabsList className="mx-4 mt-6 grid grid-cols-3 bg-muted p-1 border border-border rounded-xl">
+              <TabsTrigger value="code" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow transition-all">
                 <Code className="w-3.5 h-3.5" />
                 Code
               </TabsTrigger>
-              <TabsTrigger value="viz" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-glow transition-all">
+              <TabsTrigger value="viz" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow transition-all">
                 <BarChart3 className="w-3.5 h-3.5" />
                 Charts
               </TabsTrigger>
-              <TabsTrigger value="data" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-glow transition-all">
+              <TabsTrigger value="data" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow transition-all">
                 <Table className="w-3.5 h-3.5" />
                 Data
               </TabsTrigger>
@@ -338,7 +338,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ isCollapsed, onToggle, isMobile
                       </Button>
                     </div>
                   </div>
-                  <div className="flex-1 bg-black/40 border border-white/5 rounded-2xl p-6 overflow-auto scrollbar-thin shadow-inner mb-4 relative flex flex-col">
+                  <div className="flex-1 bg-card border border-border rounded-2xl p-6 overflow-auto scrollbar-thin shadow-inner mb-4 relative flex flex-col">
                     {isEditing ? (
                       <textarea
                         value={editedCode}

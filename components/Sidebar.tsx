@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from './ThemeToggle';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -60,14 +61,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
 
       <div
         className={cn(
-          'h-full bg-zinc-950/50 backdrop-blur-xl flex flex-col border-r border-white/5 transition-all duration-300',
+          'h-full bg-sidebar/50 backdrop-blur-xl flex flex-col border-r border-sidebar-border transition-all duration-300',
           'fixed inset-y-0 left-0 z-50 md:relative md:z-0', // Mobile positioning
           isCollapsed ? 'w-20' : 'w-72',
           !isMobileOpen && 'hidden md:flex' // Hide on mobile if not open
         )}
       >
         {/* Header */}
-        <div className="p-4 flex items-center justify-between border-b border-white/5 h-16">
+        <div className="p-4 flex items-center justify-between border-b border-sidebar-border h-16">
           {!isCollapsed && (
             <div className="flex items-center gap-2 animate-fade-in">
                <Bot className="text-primary w-6 h-6" />
@@ -161,7 +162,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
         </div>
 
         {/* User Section */}
-        <div className="p-4 border-t border-white/5 bg-black/20">
+        <div className="p-4 border-t border-sidebar-border bg-sidebar/20">
           <div
             className={cn(
               'flex items-center gap-3',
@@ -173,21 +174,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onNewChat, isM
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0 animate-fade-in">
-                <p className="text-sm font-bold truncate text-zinc-200">{user?.name || 'User'}</p>
-                <p className="text-[10px] text-zinc-500 truncate uppercase tracking-tighter">
+                <p className="text-sm font-bold truncate text-foreground">{user?.name || 'User'}</p>
+                <p className="text-[10px] text-muted-foreground truncate uppercase tracking-tighter">
                   {user?.email}
                 </p>
               </div>
             )}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleLogout}
-              className="shrink-0 hover:bg-destructive/10 hover:text-destructive text-zinc-500"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleLogout}
+                className="shrink-0 hover:bg-destructive/10 hover:text-destructive text-zinc-500"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

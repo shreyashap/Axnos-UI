@@ -1,5 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:3001';
 
 export interface SignUpData {
   name: string;
@@ -55,18 +55,12 @@ class ApiService {
 
   // Sign In
   async signIn(data: SignInData): Promise<AuthResponse> {
-    // const { login} =useAuth();
-    // FastAPI typically uses form-data for OAuth2
-    const formData = new URLSearchParams();
-    formData.append('email', data.email);
-    formData.append('password', data.password);
-
     const response = await fetch(`${this.baseUrl}/v1/auth/login`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify(data),
       credentials : "include"
     });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ChatProvider } from '@/contexts/ChatContext';
@@ -18,6 +18,12 @@ export default function DashboardPage() {
   const [mobileRightPanelOpen, setMobileRightPanelOpen] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -27,13 +33,12 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) {
-    router.push('/auth');
     return null;
   }
 
   return (
     <ChatProvider>
-      <div className="flex h-screen bg-black text-white overflow-hidden relative selection:bg-primary selection:text-white">
+      <div className="flex h-screen bg-background text-foreground overflow-hidden relative selection:bg-primary selection:text-white transition-colors duration-500">
         {/* Background Blobs */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
           <div className="blob top-[-10%] left-[-10%] scale-150 opacity-20" />

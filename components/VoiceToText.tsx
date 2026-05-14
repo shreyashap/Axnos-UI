@@ -18,7 +18,7 @@ const VoiceToText: React.FC<VoiceToTextProps> = ({ onTranscript, className }) =>
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const API_URL = process.env.NEXT_PUBLIC_PROXY_API_URL || 'http://localhost:8001';
 
   const startRecording = async () => {
     try {

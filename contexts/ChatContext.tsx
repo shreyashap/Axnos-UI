@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Chat, ChatMessage, DataSource } from '@/types';
+import { Chat, ChatMessage, DataSource, AIModel } from '@/types';
 
 interface ChatContextType {
   chats: Chat[];
@@ -10,20 +10,44 @@ interface ChatContextType {
   setActiveChat: (chat: Chat | null) => void;
   createChat: (dataSource: DataSource) => Promise<{ chat: Chat; tables: string[]; previewData?: any[] }>;
   updateChat: (chatId: string, updates: Partial<Chat>) => void;
+  updateMessage: (chatId: string, messageId: string, updates: Partial<ChatMessage>) => void;
   deleteChat: (chatId: string) => Promise<void>;
-  addMessage: (chatId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
+  addMessage: (chatId: string, message: Partial<ChatMessage> & Pick<ChatMessage, 'role' | 'content'>) => void;
   isLoading: boolean;
+  availableModels: AIModel[];
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_PROXY_API_URL || 'http://localhost:8001';
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { accessToken } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([
+    {"id": "mistral", "name": "Mistral Nemo", "description": "Fast and efficient"},
+    {"id": "openai/gpt-4o-mini", "name": "GPT-4o Mini", "description": "OpenAI's efficient mini model"},
+  ]);
+
+  // Load models from backend
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const response = await fetch(`${API_URL}/code-generation/models/`, {
+          method: 'GET',
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableModels(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+      }
+    };
+    fetchModels();
+  }, []);
 
   // Load chats from backend
   useEffect(() => {
@@ -240,11 +264,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addMessage = (chatId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
+  const addMessage = (chatId: string, message: Partial<ChatMessage> & Pick<ChatMessage, 'role' | 'content'>) => {
     const newMessage: ChatMessage = {
       ...message,
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
+      id: message.id || Date.now().toString(),
+      timestamp: message.timestamp || new Date().toISOString(),
     };
 
     setChats(prev => prev.map(chat =>
@@ -262,9 +286,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateMessage = (chatId: string, messageId: string, updates: Partial<ChatMessage>) => {
+    setChats(prev => prev.map(chat =>
+      chat.id === chatId
+        ? {
+          ...chat,
+          messages: chat.messages.map(msg =>
+            msg.id === messageId ? { ...msg, ...updates } : msg
+          ),
+          updatedAt: new Date(),
+        }
+        : chat
+    ));
+
+    if (activeChat?.id === chatId) {
+      setActiveChat(prev => prev ? {
+        ...prev,
+        messages: prev.messages.map(msg =>
+          msg.id === messageId ? { ...msg, ...updates } : msg
+        ),
+        updatedAt: new Date(),
+      } : null);
+    }
+  };
+
   const value = {
     chats,
     activeChat,
+    availableModels,
     setActiveChat: (chat: Chat | null) => {
       setActiveChat(chat);
       
@@ -311,6 +360,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     },
     createChat,
     updateChat,
+    updateMessage,
     deleteChat,
     addMessage,
     isLoading,
